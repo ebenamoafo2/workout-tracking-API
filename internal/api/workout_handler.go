@@ -8,29 +8,29 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type WorkoutHander struct{}
+type WorkoutHandler struct{}
 
-func NewWorkoutHandler() *WorkoutHander {
-	return &WorkoutHander{}
+func NewWorkoutHandler() *WorkoutHandler {
+	return &WorkoutHandler{}
 }
 
-func (wh *WorkoutHander) HandleGetWorkoutById(w http.ResponseWriter, r *http.Request) {
-	paramsWrokoutID := chi.URLParam(r,"id")
+func (wh *WorkoutHandler) HandleGetWorkoutById(w http.ResponseWriter, r *http.Request) {
+	paramsWorkoutID := chi.URLParam(r, "id")
 
-	if paramsWrokoutID == ""{
-		http.NotFound(w,r)
+	if paramsWorkoutID == "" {
+		http.NotFound(w, r)
 		return
 	}
 
-	workoutID, err := strconv.ParseInt(paramsWrokoutID,10,64)
-	if err != nil{
-		http.NotFound(w,r)
+	workoutID, err := strconv.ParseInt(paramsWorkoutID, 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
 		return
 	}
 
 	fmt.Fprintf(w, "This is the workout id %d\n", workoutID)
 }
 
-func (wh *WorkoutHander) HandleCreateWorkout(w http.ResponseWriter, r *http.Request){
-	fmt.Fprintf(w,"Created a workout\n")	
+func (wh *WorkoutHandler) HandleCreateWorkout(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Created a workout\n")
 }
