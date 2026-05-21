@@ -63,7 +63,12 @@ func (pg *PostgresWorkoutStore) CreateWorkout(workout *Workout) (*Workout, error
   `
 
 	// insert the workout and get back the auto-generated ID
-	err = tx.QueryRow(query, workout.UserID, workout.Title, workout.Description, workout.DurationMinutes, workout.CaloriesBurned).Scan(&workout.ID)
+	err = tx.QueryRow(query, 
+		workout.UserID, 
+		workout.Title, 
+		workout.Description, 
+		workout.DurationMinutes, 
+		workout.CaloriesBurned).Scan(&workout.ID)
 	if err != nil {
 		return nil, err
 	}
