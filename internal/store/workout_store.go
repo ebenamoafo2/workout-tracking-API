@@ -74,7 +74,8 @@ func (pg *PostgresWorkoutStore) CreateWorkout(workout *Workout) (*Workout, error
 	}
 
 	// insert each exercise entry linked to the workout
-	for _, entry := range workout.Entries {
+	for index := range workout.Entries {
+		entry := &workout.Entries[index]
 		query := `
     INSERT INTO workout_entries (workout_id, exercise_name, sets, reps, duration_seconds, weight, notes, order_index)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
