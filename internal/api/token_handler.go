@@ -40,9 +40,14 @@ func (h *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request)
 
 	// Validate user credentials
 	user, err := h.userStore.GetUserByUsername(req.Username)
-	if err != nil ||user == nil {
+	if err != nil {
 		h.logger.Printf("ERROR: GetUserByUsername: %v", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error" : "internal server error"})
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	if user == nil {
+		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "invalid credentials"})
 		return
 	}
 
