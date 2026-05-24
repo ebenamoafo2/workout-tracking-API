@@ -19,7 +19,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer app.DB.Close()
+
+	// Ensure the database connection is closed when the application exits
+	defer func() {
+		if err := app.DB.Close(); err != nil {
+			app.Logger.Printf("ERROR: failed to close database connection: %v", err)
+		}
+	}()
 
 	r := routes.SetupRoutes(app)
 

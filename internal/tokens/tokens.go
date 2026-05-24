@@ -12,18 +12,18 @@ const (
 )
 
 type Token struct {
-	Plaintext string `json:"token"`
-	Hash      []byte `json:"-"`
-	UserID    int64  `json:"-"`
-	Expiry    time.Time  `json:"expiry"`
-	Scope     string `json:"-"`
+	Plaintext string    `json:"token"`
+	Hash      []byte    `json:"-"`
+	UserID    int64     `json:"-"`
+	Expiry    time.Time `json:"expiry"`
+	Scope     string    `json:"-"`
 }
 
 func GenerateToken(userID int64, ttl time.Duration, scope string) (*Token, error) {
 	token := &Token{
 		UserID: userID,
 		Expiry: time.Now().Add(ttl),
-		Scope: scope,
+		Scope:  scope,
 	}
 
 	emptyBytes := make([]byte, 32)
@@ -37,4 +37,4 @@ func GenerateToken(userID int64, ttl time.Duration, scope string) (*Token, error
 	token.Hash = hash[:]
 
 	return token, nil
-}	
+}

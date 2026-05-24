@@ -1,6 +1,7 @@
 package store
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"time"
@@ -9,13 +10,21 @@ import (
 )
 
 type User struct {
-	ID           int64  `json:"id"`
-	Username     string `json:"username"`
-	Email        string `json:"email"`
-	PasswordHash password `json:"-"`
-	Bio          string `json:"bio"`
+	ID           int64     `json:"id"`
+	Username     string    `json:"username"`
+	Email        string    `json:"email"`
+	PasswordHash password  `json:"-"`
+	Bio          string    `json:"bio"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// AnonymousUser is used to validate whether a user is logged in or not,
+// representing users who have not yet registered or logged into the application.
+var AnonymousUser = &User{}
+
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
 }
 
 type password struct {
@@ -34,19 +43,18 @@ func (p *password) Set(plaintextPassword string) error {
 }
 
 func (p *password) Matches(plaintextPassword string) (bool, error) {
-   err := bcrypt.CompareHashAndPassword(p.hash, []byte(plaintextPassword))
-   if err != nil {
-	switch {
-	case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
-		return false, nil
-	default:
-		return false, err
+	err := bcrypt.CompareHashAndPassword(p.hash, []byte(plaintextPassword))
+	if err != nil {
+		switch {
+		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
+			return false, nil
+		default:
+			return false, err
+		}
 	}
-   }
 
-   return true, nil
+	return true, nil
 }
-
 
 type PostgresUserStore struct {
 	db *sql.DB
@@ -56,13 +64,12 @@ func NewPostgresUserStore(db *sql.DB) *PostgresUserStore {
 	return &PostgresUserStore{db: db}
 }
 
-
 type UserStore interface {
 	CreateUser(*User) error
 	GetUserByUsername(username string) (*User, error)
 	UpdateUser(*User) error
+	GetUserToken(scope, tokenPlaintext string) (*User, error)
 }
-
 
 func (s *PostgresUserStore) CreateUser(user *User) error {
 	query := `
@@ -88,12 +95,12 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	}
 	query := `SELECT id, username, email, password_hash, bio, created_at, updated_at FROM users WHERE username = $1`
 	err := s.db.QueryRow(query, username).Scan(
-		&user.ID, 
-		&user.Username, 
-		&user.Email, 
-		&user.PasswordHash.hash, 
-		&user.Bio, 
-		&user.CreatedAt, 
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash.hash,
+		&user.Bio,
+		&user.CreatedAt,
 		&user.UpdatedAt)
 
 	// no user found — return nil instead of an error
@@ -105,7 +112,6 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	}
 	return user, nil
 }
-
 
 func (s *PostgresUserStore) UpdateUser(user *User) error {
 	query := `
@@ -127,4 +133,39 @@ func (s *PostgresUserStore) UpdateUser(user *User) error {
 		return sql.ErrNoRows
 	}
 	return nil
+}
+
+func (s *PostgresUserStore) GetUserToken(scope, tokenPlaintext string) (*User, error) {
+	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
+	query := `
+  SELECT u.id, u.username, u.email, u.password_hash, u.bio, u.created_at, u.updated_at
+  FROM users u
+  INNER JOIN tokens t ON t.user_id = u.id
+  WHERE t.hash = $1 AND t.scope = $2 and t.expiry > $3
+  `
+
+	user := &User{
+		PasswordHash: password{},
+	}
+
+	err := s.db.QueryRow(query, tokenHash[:], scope, time.Now()).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash.hash,
+		&user.Bio,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	// no user found — return nil instead of an error
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }

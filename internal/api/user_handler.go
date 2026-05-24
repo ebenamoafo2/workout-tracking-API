@@ -26,7 +26,7 @@ type UserHandler struct {
 
 func NewUserHandler(userStore store.UserStore, logger *log.Logger) *UserHandler {
 	return &UserHandler{
-		userStore: userStore,	
+		userStore: userStore,
 		logger:    logger,
 	}
 }
@@ -58,7 +58,6 @@ func (h *UserHandler) validateRegisterRequest(req *RegisterUserRequest) error {
 	return nil
 }
 
-
 func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req RegisterUserRequest
 
@@ -67,7 +66,7 @@ func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request payload"})
 		return
 	}
-	
+
 	err := h.validateRegisterRequest(&req)
 	if err != nil {
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
@@ -87,17 +86,17 @@ func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 	err = user.PasswordHash.Set(req.Password)
 	if err != nil {
 		h.logger.Printf("ERROR: hashing password %v", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error" : "internal server error"})
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
 		return
 	}
 
 	err = h.userStore.CreateUser(user)
 	if err != nil {
 		h.logger.Printf("ERROR: registering user %v", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error" : "internal server error"})
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusCreated,utils.Envelope{"user" : user})
+	utils.WriteJSON(w, http.StatusCreated, utils.Envelope{"user": user})
 
 }
